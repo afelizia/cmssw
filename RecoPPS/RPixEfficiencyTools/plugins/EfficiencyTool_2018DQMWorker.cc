@@ -210,9 +210,13 @@ private:
   std::vector<double> fiducialXLowVector_;
   std::vector<double> fiducialYLowVector_;
   std::vector<double> fiducialYHighVector_;
+  std::vector<double> cutYLowVector_;  // cuts for near stations on the y value
+  std::vector<double> cutYHighVector_; // cuts for near stations on the y value
   std::map<std::pair<int, int>, double> fiducialXLow_;
   std::map<std::pair<int, int>, double> fiducialYLow_;
   std::map<std::pair<int, int>, double> fiducialYHigh_;
+  std::map<std::pair<int, int>, double> cutYLow_;
+  std::map<std::pair<int, int>, double> cutYHigh_;
 
   //INTERPOT
   bool Cut(CTPPSLocalTrackLite track);
@@ -329,6 +333,8 @@ EfficiencyTool_2018DQMWorker::EfficiencyTool_2018DQMWorker(const edm::ParameterS
   fiducialXLowVector_ = iConfig.getUntrackedParameter<std::vector<double>>("fiducialXLow");
   fiducialYLowVector_ = iConfig.getUntrackedParameter<std::vector<double>>("fiducialYLow");
   fiducialYHighVector_ = iConfig.getUntrackedParameter<std::vector<double>>("fiducialYHigh");
+  cutYLowVector_ = iConfig.getUntrackedParameter<std::vector<double>>("cutYLow");
+  cutYHighVector_ = iConfig.getUntrackedParameter<std::vector<double>>("cutYHigh");
   fiducialXLow_ = {
       {std::pair<int, int>(0, 0), fiducialXLowVector_.at(0)},
       {std::pair<int, int>(0, 2), fiducialXLowVector_.at(1)},
@@ -346,6 +352,14 @@ EfficiencyTool_2018DQMWorker::EfficiencyTool_2018DQMWorker(const edm::ParameterS
       {std::pair<int, int>(0, 2), fiducialYHighVector_.at(1)},
       {std::pair<int, int>(1, 0), fiducialYHighVector_.at(2)},
       {std::pair<int, int>(1, 2), fiducialYHighVector_.at(3)},
+  };
+  cutYLow_ = {
+      {std::pair<int, int>(0, 0), cutYLowVector_.at(0)},
+      {std::pair<int, int>(1, 0), cutYLowVector_.at(1)},
+  };
+  cutYHigh_ = {
+      {std::pair<int, int>(0, 0), cutYHighVector_.at(0)},
+      {std::pair<int, int>(1, 0), cutYHighVector_.at(1)},
   };
   detectorTiltAngle_ = iConfig.getUntrackedParameter<double>("detectorTiltAngle");
   mapXmin_ = 0. * TMath::Cos(detectorTiltAngle_ / 180. * TMath::Pi());
@@ -1532,8 +1546,12 @@ void EfficiencyTool_2018DQMWorker::fillDescriptions(edm::ConfigurationDescriptio
     ->setComment("Lower bound of the fiducial region in X");
   desc.addUntracked<std::vector<double>>("fiducialYLow", {-20.0,-20.0,-20.0,-20.0})
     ->setComment("Lower bound of the fiducial region in Y");
-  desc.addUntracked<std::vector<double>>("fiducialYHigh", {4.0,4.0,4.0,4.0}) //Annalisa, prima erano tutti 20.0, ora ho sostituito il 20 con il 4
+  desc.addUntracked<std::vector<double>>("fiducialYHigh", {20.0,20.0,20.0,20.0}) //Annalisa, prima erano tutti 20.0, ora ho sostituito il 20 con il 4
     ->setComment("Upper bound of the fiducial region in Y");
+  desc.addUntracked<std::vector<double>>("cutYLow", {-20.0,-20.0})
+    ->setComment("Lower Y bound of the orthogonal cut in near stations");
+  desc.addUntracked<std::vector<double>>("cutYHigh", {20.0,20.0}) //Annalisa, prima erano tutti 20.0, ora ho sostituito il 20 con il 4
+    ->setComment("Upper Y bound of the orthogonal cut in near stations");
   desc.addUntracked<double>("detectorTiltAngle", 20.)
     ->setComment("Detector tilt angle in degrees");
   desc.addUntracked<double>("detectorRotationAngle", -8.)
@@ -1690,6 +1708,14 @@ bool EfficiencyTool_2018DQMWorker::Cut(CTPPSPixelLocalTrack track, int arm, int 
   double y = track.y0();
   float pixelX0_rotated = 0;
   float pixelY0_rotated = 0;
+
+  // Cut events not passing the 'orthogonal' cuts in the near station 
+  if (station == 0){
+    if (y > cutYHigh_[std::pair<int, int>(arm, station)] ||
+        y < cutYLow_[std::pair<int, int>(arm, station)])
+      return true;
+  }
+
   if (station == 0) {
     pixelX0_rotated = x * TMath::Cos((detectorRotationAngle_ / 180.) * TMath::Pi()) -
                       y * TMath::Sin((detectorRotationAngle_ / 180.) * TMath::Pi());
@@ -1722,6 +1748,15 @@ bool EfficiencyTool_2018DQMWorker::Cut(CTPPSLocalTrackLite track) {
   double y = track.y();
   float pixelX0_rotated = 0;
   float pixelY0_rotated = 0;
+
+
+  // Cut events not passing the 'orthogonal' cuts in the near station 
+  if (station == 0){
+    if (y > cutYHigh_[std::pair<int, int>(arm, station)] ||
+        y < cutYLow_[std::pair<int, int>(arm, station)])
+      return true;
+  }
+
   if (station == 0) {
     pixelX0_rotated = x * TMath::Cos((-8. / 180.) * TMath::Pi()) - y * TMath::Sin((-8. / 180.) * TMath::Pi());
     pixelY0_rotated = x * TMath::Sin((-8. / 180.) * TMath::Pi()) + y * TMath::Cos((-8. / 180.) * TMath::Pi());

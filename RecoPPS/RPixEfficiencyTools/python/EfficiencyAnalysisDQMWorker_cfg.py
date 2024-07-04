@@ -11,9 +11,11 @@ import FWCore.ParameterSet.VarParsing as VarParsing
 # GLOBAL CONSTANT VARIABLES
 # fiducial variables restrict the area to analyze 
 # the current parameters cover the whole possible area
-fiducialXLow = [0,0,0,0]
-fiducialYLow = [-8.5,-8.5,-8.5,-8.5]
-fiducialYHigh = [4.3,4.3,4.3,4.3] #Annalisa, prima era 99.
+fiducialXLow = [0,0,0,0] # Low x boundary, parallel to detector edge (tilted in near stations)
+fiducialYLow = [-99,-99,-99,-99]  # Low y boundary, parallel to detector edge (tilted in near stations)
+fiducialYHigh = [99,99,99,99]  # High y boundary, parallel to detector edge (tilted in near stations)
+cutYLow = [-20,-20] # Low y boundary, parallel to x axis (not tilted in near stations)
+cutYHigh = [4,4] # High y boundary, parallel to x axis (not tilted in near stations)
 
 #SETUP PROCESS
 process = cms.Process("EfficiencyAnalysisDQMWorker", eras.Run3)
@@ -235,6 +237,8 @@ process.worker = DQMEDAnalyzer('EfficiencyTool_2018DQMWorker',
     fiducialXLow=cms.untracked.vdouble(fiducialXLow),
     fiducialYLow=cms.untracked.vdouble(fiducialYLow),
     fiducialYHigh=cms.untracked.vdouble(fiducialYHigh),
+    cutYLow=cms.untracked.vdouble(cutYLow),
+    cutYHigh=cms.untracked.vdouble(cutYHigh),
     detectorTiltAngle=cms.untracked.double(20),
     detectorRotationAngle=cms.untracked.double(-8),
 
